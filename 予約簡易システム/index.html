@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>空き時間表示と予約</title>
+</head>
+<body>
+  <h1>カウンセリング予約システム</h1>
+
+  <!-- 空き時間検索 -->
+  <div id="availability-section">
+    <h2>空き時間を検索</h2>
+    <button onclick="fetchAvailability()">空き時間を取得</button>
+    <ul id="availability-list"></ul>
+  </div>
+
+  <!-- 予約情報入力 -->
+  <div id="reservation-section">
+    <h2>予約情報の入力</h2>
+    <label>
+      名前:
+      <input type="text" id="user-name">
+    </label>
+    <br>
+    <label>
+      メールアドレス:
+      <input type="email" id="user-email">
+    </label>
+    <br>
+    <label>
+      選択した時間:
+      <input type="text" id="selected-time" readonly>
+    </label>
+    <br>
+    <button onclick="makeReservation()">予約する</button>
+  </div>
+
+  <script>
+    // 空き時間を取得
+    function fetchAvailability() {
+      google.script.run
+        .withSuccessHandler(function(data) {
+          const list = document.getElementById("availability-list");
+          list.innerHTML = ""; // 一覧をクリア
+
+          if (data.length === 0) {
+            list.innerHTML = "<li>空き時間がありません</li>";
+            return;
+          }
+
+          data.forEach(slot => {
+            const li = document.createElement("li");
+            li.textContent = slot;
+            li.onclick = () => {
+              document.getElementById("selected-time").value = slot; // 選択した時間を表示
+            };
+            list.appendChild(li);
+          });
+        })
+        .searchAvailability(); // カレンダーIDはサーバーサイドでハードコード
+    }
+
+    // 予約を作成
+    function makeReservation() {
+      const userName = document.getElementById("user-name").value;
+      const userEmail = document.getElementById("user-email").value;
+      const selectedTime = document.getElementById("selected-time").value;
+
+      if (!userName || !userEmail || !selectedTime) {
+        alert("全ての項目を入力してください");
+        return;
+      }
+
+      const data = { userName, userEmail, selectedTime };
+      google.script.run
+        .withSuccessHandler(function(response) {
+          if (response.error) {
+            alert("エラー: " + response.error);
+          } else {
+            alert("予約が完了しました！Meetリンク: " + response.meetLink);
+          }
+        })
+        .createReservation(data);
+    }
+  </script>
+</body>
+</html>
